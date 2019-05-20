@@ -202,10 +202,8 @@ void startMenu(){
 
   void minimumMeetwaarde(){
     if(optionSelected){
-      
+      return;
         }
-        return;
-      }
     currentMenu=3;
     
     //max()checks if position is greater then 0. If not it returns 0.
@@ -218,12 +216,7 @@ void startMenu(){
     lcd.setCursor(6,1);
     lcd.print(rotaryPosition);
 
-     serialAns = "NaN";
-     if (Serial.available() > 0){
-      serialAns = Serial.readString();
-      if(isNaN(serialAns))
-      Serial.flush();
-     }
+    //insert serial input
   }
 
 //==============================================================================================//
