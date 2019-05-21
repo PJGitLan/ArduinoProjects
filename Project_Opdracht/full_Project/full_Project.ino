@@ -26,9 +26,7 @@ int i = 0;
 int optionsSize = 0;
 int currentMenu = 0;
 
-//==============================================================================================//
-//Setup      Setup      Setup      Setup      Setup      Setup      Setup      Setup      Setup //
-//==============================================================================================//
+^^^ Global vars etc ^^^
 
 void setup() {
   Serial.begin(9600);
@@ -46,10 +44,9 @@ void setup() {
 
   startMenu();
 }
-//==============================================================================================//
-//Loop      Loop      Loop      Loop      Loop      Loop      Loop      Loop      Loop      Loop//
-//==============================================================================================//
+
 void loop() {
+  
   // put your main code here, to run repeatedly:
   if(digitalRead(buttonPin)){
     optionSelected = true;
@@ -86,10 +83,6 @@ void loop() {
   }
 }
 
-//==============================================================================================//
-//Menu Printer      Menu Printer      Menu Printer      Menu Printer      Menu Printer      Menu//
-//==============================================================================================//
-
 void printMenu(String options[],int optionsSize){
   if(rotaryPosition < 0){
     rotaryPosition = optionsSize-1;
@@ -112,10 +105,6 @@ void printMenu(String options[],int optionsSize){
     lcd.print(options[rotaryPosition+1]);
   }
 }
-
-//==============================================================================================//
-//Start Menu      Start Menu      Start Menu      Start Menu      Start Menu      Start Menu    //
-//==============================================================================================//
 
 void startMenu(){
     if(optionSelected){
@@ -140,11 +129,7 @@ void startMenu(){
     printMenu(options, optionsSize); 
   }
 
-//==============================================================================================//
-//Afstand meten      Afstand meten      Afstand meten      Afstand meten      Afstand meten     //
-//==============================================================================================//
-
-  void afstandMeten(){
+void afstandMeten(){
     if(optionSelected){
       optionSelected = false;
       int temp = rotaryPosition;
@@ -169,11 +154,8 @@ void startMenu(){
     printMenu(options, optionsSize); 
     
   }
-//==============================================================================================//
-//Hoeken meten      Hoeken meten      Hoeken meten      Hoeken meten      Hoeken meten      Hoek//
-//==============================================================================================//
 
-  void hoekenMeten(){
+void hoekenMeten(){
 //    if(optionSelected){
 //      optionSelected = false;
 //      int temp = rotaryPosition;
@@ -196,11 +178,7 @@ void startMenu(){
     printMenu(options, optionsSize); 
   }
 
-//==============================================================================================//
-//Minimum meetwaarde      Minimum meetwaarde      Minimum meetwaarde      Minimum meetwaarde    //
-//==============================================================================================//
-
-  void minimumMeetwaarde(){
+void minimumMeetwaarde(){
     if(optionSelected){
       return;
         }
@@ -218,10 +196,6 @@ void startMenu(){
 
     //insert serial input
   }
-
-//==============================================================================================//
-//ISR: update position      ISR: update position      ISR: update position      ISR: update posi//   
-//==============================================================================================//
   
 void updatePosition(){
   static unsigned long lastInterruptTime = 0;
