@@ -1,5 +1,3 @@
-#include <math.h>;
-
 String serialAns ="Nan";
 int number;
 int i = 0;
