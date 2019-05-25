@@ -1,5 +1,6 @@
 #include <LiquidCrystal.h> //Lcd library
 #include <NewPing.h> //Ultrasone sensor library
+#include <Servo.h> //Servo library
 
 //Lcd pins & setup
 const int rs = 12, en = 11, d4 = 7, d5 = 8, d6 = 9, d7 = 10;
@@ -21,23 +22,26 @@ const int trigPin = 5;
 int maxDistance = 200;
 NewPing sonar(trigPin, echoPin, maxDistance);
 
+//Servo setup
+Servo servo;
+
 //Variable that's updated by the ISR "updatePosition()" 
 volatile int rotaryPosition, prevPosition = 0;
 
 //flags
 bool optionSelected = false;
 
-//String serialAns = "NaN";
-
+//variables
 int i = 0;
 int optionsSize = 0;
 int currentMenu = 0;
-int minimumLength = 2;
-int maximumLength = 300;
+int hoek = 0;
 
 unsigned int previousDistance = 0;
 
 float scale = 0;
+float minimumLength = 2;
+float maximumLength = 300;
 
 //^^^ Global vars etc ^^^
 
@@ -45,7 +49,8 @@ void setup() {
   Serial.begin(9600);
   //Serial.setTimeout(100);
   lcd.begin(16,2);
-
+  servo.attach(6);
+  
   pinMode(pinA, INPUT_PULLUP);
   pinMode(pinB, INPUT_PULLUP);
   pinMode(buttonPin,INPUT);
@@ -55,7 +60,7 @@ void setup() {
   }
   
   attachInterrupt(digitalPinToInterrupt(pinA), updatePosition, LOW);//FALLING gives errors
-
+  calculatingScale(); //Delete in final version
   startMenu();
 }
 
@@ -65,7 +70,7 @@ void loop() {
   checkButton();
  
   if (rotaryPosition != prevPosition || optionSelected) {
-    //clearLeds();
+    clearLeds();
     switch(currentMenu){
           case 0:
             startMenu();
@@ -87,6 +92,9 @@ void loop() {
             break;
           case 6:
             metenActiveren();
+            break;
+          case 7:
+            instellenHoek();
             break;
           default:
             startMenu();
@@ -158,7 +166,6 @@ void afstandMeten(){
      
       switch(temp){
         case 0:
-          Serial.println("frfgrtg");
           minimumMeetwaarde();
           break;
         case 1:
@@ -169,7 +176,9 @@ void afstandMeten(){
           break;
         case 3:
           metenActiveren();
-          Serial.println(currentMenu);
+          break;
+        case 4:
+          startMenu();
           break;
       }
       return;
@@ -184,22 +193,25 @@ void afstandMeten(){
   }
 
 void hoekenMeten(){
-//    if(optionSelected){
-//      optionSelected = false;
-//      int temp = rotaryPosition;
-//      rotaryPosition = 0;
-//      
-//      switch(temp){
-//        case 0:
-//          afstandMeten();
-//          break;
-////        case 1:
-////          hoekenMeten();
-////          break;
-//        }
-//        return;
-//      }
+    if(optionSelected){
+      optionSelected = false;
+      int temp = rotaryPosition;
+      rotaryPosition = 0;
       
+      switch(temp){
+        case 0:
+          instellenHoek();
+          break;
+        case 1:
+          hoekActiveren();
+          break;
+        case 2:
+          startMenu();
+          break;
+        }
+        return;
+      }
+    digitalWrite(leds[1],HIGH);  
     currentMenu=2;
     optionsSize = 3;
     String options[optionsSize] = {"instellen van de hoek","hoek activeren","terug naar het hoofdmenu"};
@@ -226,7 +238,8 @@ void minimumMeetwaarde(){
       }
       return;
     }
-    
+
+    digitalWrite(leds[0],HIGH);
     currentMenu=3;
     //max()checks if position is greater then 0. If not it returns 0.
     //min()checks if position is smaller then 100. If not it returns 100.
@@ -259,7 +272,7 @@ void maximumMeetwaarde(){
       }
       return;
     }
-    
+    digitalWrite(leds[0],HIGH);
     currentMenu=4;
     //max()checks if position is greater then 0. If not it returns 0.
     //min()checks if position is smaller then 100. If not it returns 100.
@@ -283,26 +296,26 @@ void verdelingLeds(){
       afstandMeten();
       return;
   }
+  digitalWrite(leds[0],HIGH);
   currentMenu=5;
   calculatingScale();
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("L1:");
-  lcd.print(minimumLength+scale*0,1);
+  lcd.print(minimumLength+scale*0,2);
   lcd.print(" L2:");
-  lcd.print(minimumLength+scale,1);
+  lcd.print(minimumLength+scale,2);
   lcd.print(" L3:");
-  lcd.print(minimumLength+scale*2,1);
+  lcd.print(minimumLength+scale*2,2);
   lcd.setCursor(0,1);
   lcd.print("L4:");
-  lcd.print(minimumLength+scale*3,1);
+  lcd.print(minimumLength+scale*3,2);
   lcd.print(" L5:");
-  lcd.print(minimumLength+scale*4,1);
+  lcd.print(minimumLength+scale*4,2);
 }
 
 void metenActiveren(){
   while(!optionSelected){
-    optionSelected = false;
     //delay(35); 
     unsigned int echoTime = sonar.ping_median();
     unsigned int distanceCm = sonar.convert_cm(echoTime);
@@ -315,6 +328,9 @@ void metenActiveren(){
           clearLeds();
           digitalWrite(leds[i],HIGH);
         }
+        if(minimumLength+scale==0){
+          clearLeds();
+        }
       }
       
       lcd.clear();
@@ -323,9 +339,43 @@ void metenActiveren(){
       lcd.setCursor(0,1);
       lcd.print(distanceCm);
     }
-     
      checkButton();
   }
+    optionSelected = false;
+    rotaryPosition = 0;
+    clearLeds();
+    startMenu();
+}
+
+void instellenHoek(){
+  if(optionSelected){
+    optionSelected = false;
+    hoek = rotaryPosition;
+    rotaryPosition = 0;
+    hoekenMeten();
+    return;
+   }
+    digitalWrite(leds[1],HIGH);
+    currentMenu=7;
+    //max()checks if position is greater then 0. If not it returns 0.
+    //min()checks if position is smaller then 100. If not it returns 100.
+    rotaryPosition = min(180, max(0, rotaryPosition));
+    
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Intellen van de hoek");
+    lcd.setCursor(6,1);
+    lcd.print(rotaryPosition);
+}
+
+void hoekActiveren(){
+  digitalWrite(leds[0],HIGH);
+  //hoek = map(hoek, 0, 180, 0, 180);
+  //Serial.println(hoek);
+  servo.write(hoek);
+  //Serial.println(servo.read());
+  rotaryPosition = 0;
+  hoekenMeten();
 }
 
 void checkButton(){
