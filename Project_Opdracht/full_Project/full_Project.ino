@@ -1,6 +1,7 @@
 #include <LiquidCrystal.h> //Lcd library
+#include <NewPing.h> //Ultrasone sensor library
 
-//Lcd pins
+//Lcd pins & setup
 const int rs = 12, en = 11, d4 = 7, d5 = 8, d6 = 9, d7 = 10;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
@@ -13,6 +14,12 @@ const int buttonPin = 13;
 
 //Led pins
 const int leds[] = {A0,A1,A2,A3,A4};
+
+//Sonar pins &setup
+const int echoPin = 3;
+const int trigPin = 5;
+int maxDistance = 200;
+NewPing sonar(trigPin, echoPin, maxDistance);
 
 //Variable that's updated by the ISR "updatePosition()" 
 volatile int rotaryPosition, prevPosition = 0;
@@ -27,6 +34,8 @@ int optionsSize = 0;
 int currentMenu = 0;
 int minimumLength = 2;
 int maximumLength = 300;
+
+unsigned int previousDistance = 0;
 
 float scale = 0;
 
@@ -53,15 +62,10 @@ void setup() {
 void loop() {
   
   // put your main code here, to run repeatedly:
-  if(digitalRead(buttonPin)){
-    optionSelected = true;
-    delay(200);
-  }
-  
+  checkButton();
+ 
   if (rotaryPosition != prevPosition || optionSelected) {
-    for(i=0;i<5;i++){
-      digitalWrite(leds[i],LOW);  
-    }
+    //clearLeds();
     switch(currentMenu){
           case 0:
             startMenu();
@@ -81,6 +85,9 @@ void loop() {
           case 5:
             verdelingLeds();
             break;
+          case 6:
+            metenActiveren();
+            break;
           default:
             startMenu();
             break;
@@ -89,6 +96,12 @@ void loop() {
     // Keep track of this new value
     prevPosition = rotaryPosition ;
   }
+}
+
+void clearLeds(){
+  for(i=0;i<5;i++){
+      digitalWrite(leds[i],LOW);  
+    }
 }
 
 void printMenu(String options[],int optionsSize){
@@ -145,6 +158,7 @@ void afstandMeten(){
      
       switch(temp){
         case 0:
+          Serial.println("frfgrtg");
           minimumMeetwaarde();
           break;
         case 1:
@@ -153,12 +167,15 @@ void afstandMeten(){
         case 2:
           verdelingLeds();
           break;
+        case 3:
+          metenActiveren();
+          Serial.println(currentMenu);
+          break;
       }
       return;
       
     }
-    Serial.println("in afstand 2");
-    digitalWrite(leds[0],HIGH);
+    digitalWrite(leds[0],HIGH); 
     currentMenu=1;
     optionsSize = 5;
     String options[optionsSize] = {"minimum meetwaarde instellen","maximum meetwaarde instellen","bekijken verdeling over de led's","meten activeren","terug naar het hoofdmenu"};
@@ -195,6 +212,7 @@ void minimumMeetwaarde(){
       if(rotaryPosition<maximumLength){
         minimumLength = rotaryPosition;
         calculatingScale();
+        rotaryPosition = 0;
         afstandMeten();
       }
       else{
@@ -227,6 +245,7 @@ void maximumMeetwaarde(){
       if(rotaryPosition>minimumLength){
         maximumLength = rotaryPosition;
         calculatingScale();
+        rotaryPosition = 0;
         afstandMeten();
       }
       else{
@@ -258,28 +277,69 @@ void calculatingScale(){
 }
 
 void verdelingLeds(){
+  if(optionSelected){
+      optionSelected = false;
+      rotaryPosition = 0;
+      afstandMeten();
+      return;
+  }
   currentMenu=5;
   calculatingScale();
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("L1:");
-  lcd.print(minimumLength+scale*0);
+  lcd.print(minimumLength+scale*0,1);
   lcd.print(" L2:");
-  lcd.print(minimumLength+scale);
+  lcd.print(minimumLength+scale,1);
   lcd.print(" L3:");
-  lcd.print(minimumLength+scale*2);
+  lcd.print(minimumLength+scale*2,1);
   lcd.setCursor(0,1);
   lcd.print("L4:");
-  lcd.print(minimumLength+scale*3);
+  lcd.print(minimumLength+scale*3,1);
   lcd.print(" L5:");
-  lcd.print(minimumLength+scale*4);
+  lcd.print(minimumLength+scale*4,1);
+}
+
+void metenActiveren(){
+  while(!optionSelected){
+    optionSelected = false;
+    //delay(35); 
+    unsigned int echoTime = sonar.ping_median();
+    unsigned int distanceCm = sonar.convert_cm(echoTime);
+    
+    if(distanceCm != previousDistance){
+      previousDistance =  distanceCm;
+      
+      for(int i=0;i<5;i++){
+        if(minimumLength+scale*i<=distanceCm){
+          clearLeds();
+          digitalWrite(leds[i],HIGH);
+        }
+      }
+      
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("Afstand in cm");
+      lcd.setCursor(0,1);
+      lcd.print(distanceCm);
+    }
+     
+     checkButton();
+  }
+}
+
+void checkButton(){
+  if(digitalRead(buttonPin)){
+    optionSelected = true;
+    delay(200);
+  }
 }
   
 void updatePosition(){
   static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
 
-  // If interrupts come faster than 5ms, assume it's a bounce and ignore
+  // checks time against previous interruptTime
   if (interruptTime - lastInterruptTime > 5) {
     if (digitalRead(pinB) == LOW)
     {
