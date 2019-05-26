@@ -1,6 +1,12 @@
 #include <LiquidCrystal.h> //Lcd library
 #include <NewPing.h> //Ultrasone sensor library
 #include <Servo.h> //Servo library
+#include <EEPROM.h> //EEPROM library
+
+//EEPROM locations
+int EminLength = 0;
+int EmaxLength = 50;
+int Ehoek = 100;
 
 //Lcd pins & setup
 const int rs = 12, en = 11, d4 = 7, d5 = 8, d6 = 9, d7 = 10;
@@ -15,11 +21,12 @@ const int buttonPin = 13;
 
 //Led pins
 const int leds[] = {A0,A1,A2,A3,A4};
+const int ledMode = A5;
 
 //Sonar pins &setup
 const int echoPin = 3;
 const int trigPin = 5;
-int maxDistance = 200;
+int maxDistance = 400; //Shorter maxDistance makes quicker pings/measurements
 NewPing sonar(trigPin, echoPin, maxDistance);
 
 //Servo setup
@@ -35,18 +42,18 @@ bool optionSelected = false;
 int i = 0;
 int optionsSize = 0;
 int currentMenu = 0;
-int hoek = 0;
+int hoek = EEPROM.read(Ehoek);
 
 unsigned int previousDistance = 0;
 
 float scale = 0;
-float minimumLength = 2;
-float maximumLength = 300;
+float minimumLength = EEPROM.read(EminLength);
+float maximumLength = EEPROM.read(EmaxLength);
 
 //^^^ Global vars etc ^^^
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   //Serial.setTimeout(100);
   lcd.begin(16,2);
   servo.attach(6);
@@ -58,9 +65,10 @@ void setup() {
   for(i=0;i<5;i++){
     pinMode(leds[i],OUTPUT);
   }
+  pinMode(ledMode, OUTPUT);
   
   attachInterrupt(digitalPinToInterrupt(pinA), updatePosition, LOW);//FALLING gives errors
-  calculatingScale(); //Delete in final version
+  calculatingScale(); 
   startMenu();
 }
 
@@ -110,6 +118,7 @@ void clearLeds(){
   for(i=0;i<5;i++){
       digitalWrite(leds[i],LOW);  
     }
+  digitalWrite(ledMode,LOW);
 }
 
 void printMenu(String options[],int optionsSize){
@@ -184,7 +193,7 @@ void afstandMeten(){
       return;
       
     }
-    digitalWrite(leds[0],HIGH); 
+    digitalWrite(ledMode,HIGH); 
     currentMenu=1;
     optionsSize = 5;
     String options[optionsSize] = {"minimum meetwaarde instellen","maximum meetwaarde instellen","bekijken verdeling over de led's","meten activeren","terug naar het hoofdmenu"};
@@ -211,7 +220,7 @@ void hoekenMeten(){
         }
         return;
       }
-    digitalWrite(leds[1],HIGH);  
+     
     currentMenu=2;
     optionsSize = 3;
     String options[optionsSize] = {"instellen van de hoek","hoek activeren","terug naar het hoofdmenu"};
@@ -223,11 +232,13 @@ void minimumMeetwaarde(){
     optionSelected = false;
       if(rotaryPosition<maximumLength){
         minimumLength = rotaryPosition;
+        EEPROM.update(EminLength, minimumLength);
         calculatingScale();
         rotaryPosition = 0;
         afstandMeten();
       }
       else{
+        digitalWrite(ledMode,HIGH);
         lcd.clear();
         lcd.setCursor(0,0);
         lcd.print("Error:");
@@ -239,7 +250,7 @@ void minimumMeetwaarde(){
       return;
     }
 
-    digitalWrite(leds[0],HIGH);
+    digitalWrite(ledMode,HIGH);
     currentMenu=3;
     //max()checks if position is greater then 0. If not it returns 0.
     //min()checks if position is smaller then 100. If not it returns 100.
@@ -257,11 +268,13 @@ void maximumMeetwaarde(){
     optionSelected = false;
       if(rotaryPosition>minimumLength){
         maximumLength = rotaryPosition;
+        EEPROM.update(EmaxLength, maximumLength);
         calculatingScale();
         rotaryPosition = 0;
         afstandMeten();
       }
       else{
+        digitalWrite(ledMode,HIGH);
         lcd.clear();
         lcd.setCursor(0,0);
         lcd.print("Error:");
@@ -272,7 +285,7 @@ void maximumMeetwaarde(){
       }
       return;
     }
-    digitalWrite(leds[0],HIGH);
+    digitalWrite(ledMode,HIGH);
     currentMenu=4;
     //max()checks if position is greater then 0. If not it returns 0.
     //min()checks if position is smaller then 100. If not it returns 100.
@@ -296,7 +309,7 @@ void verdelingLeds(){
       afstandMeten();
       return;
   }
-  digitalWrite(leds[0],HIGH);
+  digitalWrite(ledMode,HIGH);
   currentMenu=5;
   calculatingScale();
   lcd.clear();
@@ -351,11 +364,12 @@ void instellenHoek(){
   if(optionSelected){
     optionSelected = false;
     hoek = rotaryPosition;
+    EEPROM.update(Ehoek, hoek);
     rotaryPosition = 0;
     hoekenMeten();
     return;
    }
-    digitalWrite(leds[1],HIGH);
+    
     currentMenu=7;
     //max()checks if position is greater then 0. If not it returns 0.
     //min()checks if position is smaller then 100. If not it returns 100.
@@ -369,7 +383,7 @@ void instellenHoek(){
 }
 
 void hoekActiveren(){
-  digitalWrite(leds[0],HIGH);
+  
   //hoek = map(hoek, 0, 180, 0, 180);
   //Serial.println(hoek);
   servo.write(hoek);
