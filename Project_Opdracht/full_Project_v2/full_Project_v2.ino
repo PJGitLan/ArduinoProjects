@@ -413,7 +413,7 @@ void scrollMenu(String options[], int optionsSize){
   static unsigned long lastScroll = 0;
   unsigned long scrollTime = millis();
 
-  if (scrollTime - lastScroll> 5) {
+  if (scrollTime - lastScroll> 500) {
     int rotaryLength = options[rotaryPosition].length();
     if(rotaryLength>15){
       if(rotaryLength-counter>15){
@@ -424,7 +424,6 @@ void scrollMenu(String options[], int optionsSize){
           lcd.print(options[rotaryPosition][counter+i]);
         }
         counter++;
-        delay(500); 
       }
       else{
         counter = 0;
