@@ -1,3 +1,4 @@
+//Pieter-Jan Lanneer
 #include <LiquidCrystal.h> //Lcd library
 #include <NewPing.h> //Ultrasone sensor library
 #include <Servo.h> //Servo library
