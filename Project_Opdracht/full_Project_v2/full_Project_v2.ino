@@ -414,8 +414,8 @@ void scrollMenu(String options[], int optionsSize){
 //if(options[rotaryPosition].length()>15){
 //if(options[rotaryPosition].length()-15<counter){
   
-  if(20>15){
-    if(counter<5){
+  if(options[rotaryPositions].length()>16){
+    if(){
       lcd.setCursor(1,0);
       lcd.print("                ");
       lcd.setCursor(1,0);
