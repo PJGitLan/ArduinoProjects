@@ -410,21 +410,27 @@ void hoekActiveren(){
 }
 
 void scrollMenu(String options[], int optionsSize){
+  static unsigned long lastScroll = 0;
+  unsigned long scrollTime = millis();
 
-//if(options[rotaryPosition].length()>15){
-//if(options[rotaryPosition].length()-15<counter){
-  
-  if(options[rotaryPositions].length()>16){
-    if(){
-      lcd.setCursor(1,0);
-      lcd.print("                ");
-      lcd.setCursor(1,0);
-      for(int i = 0; i < options[rotaryPosition].length();i++){
-        lcd.print(options[rotaryPosition][counter+i]);
+  if (scrollTime - lastScroll> 5) {
+    int rotaryLength = options[rotaryPosition].length();
+    if(rotaryLength>15){
+      if(rotaryLength-counter>15){
+        lcd.setCursor(1,0);
+        lcd.print("                ");
+        lcd.setCursor(1,0);
+        for(int i = 0; i < options[rotaryPosition].length();i++){
+          lcd.print(options[rotaryPosition][counter+i]);
+        }
+        counter++;
+        delay(500); 
       }
-      counter++;
-      delay(500); 
+      else{
+        counter = 0;
+      }
     }
+    lastScroll = scrollTime;
   }
 }
 
