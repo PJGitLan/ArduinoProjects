@@ -11,6 +11,7 @@ int Ehoek = 100;
 //Lcd pins & setup
 const int rs = 12, en = 11, d4 = 7, d5 = 8, d6 = 9, d7 = 10;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+//LiquidCrystal lcd(rs, en, d7, d6, d5, d4 );
 
 //Rotary pins
 const int pinA = 2;
@@ -53,7 +54,7 @@ float maximumLength = EEPROM.read(EmaxLength);
 //^^^ Global vars etc ^^^
 
 void setup() {
-  //Serial.begin(9600);
+  Serial.begin(9600);
   //Serial.setTimeout(100);
   lcd.begin(16, 2); //Initiates 16x2 lcd screen
   servo.attach(servoPin); //Attaches servo to right pin
@@ -72,12 +73,11 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(pinA), updatePosition, LOW);//FALLING gives errors
 
   calculatingScale();
-  startMenu();
 }
-
 
 void loop() {
   // put your main code here, to run repeatedly:
+  startMenu();
 }
 
 void clearLeds() {
@@ -88,6 +88,7 @@ void clearLeds() {
 }
 
 void printMenu(String options[], int optionsSize) {
+  Serial.println(options[rotaryPosition]);
   if (rotaryPosition < 0) { //scrolling down on first option selects last option
     rotaryPosition = optionsSize - 1;
   }
@@ -347,6 +348,13 @@ void metenActiveren() {
     unsigned int echoTime = sonar.ping_median();
     unsigned int distanceCm = sonar.convert_cm(echoTime);
 
+    digitalWrite(ledMode, HIGH);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Afstand in cm");
+      lcd.setCursor(0, 1);
+      lcd.print(distanceCm);
+
     if (distanceCm != previousDistance) {
       previousDistance =  distanceCm;
 
@@ -494,7 +502,7 @@ void updatePosition() {
   static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
 
-  // checks time against previous interruptTime
+  // checks if time difference is greater then 5ms
   if (interruptTime - lastInterruptTime > 5) {
     if (digitalRead(pinB) == LOW)
     {
@@ -504,6 +512,5 @@ void updatePosition() {
       rotaryPosition++ ;
     }
   }
-  // Keep track of when we were here last (no more than every 5ms)
   lastInterruptTime = interruptTime;
 }
